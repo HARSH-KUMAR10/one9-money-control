@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Money Control</title>
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        font-family: Verdana, Geneva, Tahoma, sans-serif;
+        font-size: 12;
+      }
+      .row {
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        max-width: 100%;
+      }
+      .col-4 {
+        flex: 0 0 33%; /* 4/12 = 33.33% of the row width */
+        max-width: 33%; /* Ensures the column does not exceed this width */
+      }
+      .col-6 {
+        padding: 0;
+        margin: 0;
+        flex: 0 0 46.75%; /* 6/12 = 50% of the row width */
+        max-width: 46.75%; /* Ensures the column does not exceed this width */
+      }
+      .col-12 {
+        flex: 0 0 99%; /* 12/12 = 100% of the row width */
+        max-width: 99%; /* Ensures the column spans the entire row */
+      }
+      @media (min-width: 768px) {
+        .col-md-4 {
+          flex: 0 0 33%; /* 4/12 = 33.33% of the row width */
+          max-width: 33%; /* Ensures the column does not exceed this width */
+        }
+        .col-md-6 {
+          flex: 0 0 49%; /* 6/12 = 50% of the row width */
+          max-width: 49%; /* Ensures the column does not exceed this width */
+        }
+        .col-md-12 {
+          flex: 0 0 99%; /* 12/12 = 100% of the row width */
+          max-width: 99%; /* Ensures the column spans the entire row */
+        }
+      }
+      .p-1 {
+        padding: 5px;
+      }
+      .p-2 {
+        padding: 8px;
+      }
+      .p-3 {
+        padding: 12px;
+      }
+      .p-4 {
+        padding: 16px;
+      }
+      .p-5 {
+        padding: 20px;
+      }
+
+      .m-1 {
+        margin: 5px;
+      }
+      .m-2 {
+        margin: 8px;
+      }
+      .m-3 {
+        margin: 12px;
+      }
+      .m-4 {
+        margin: 16px;
+      }
+      .m-5 {
+        margin: 20px;
+      }
+      .justify-content-between {
+        justify-content: space-between;
+      }
+      .justify-content-around {
+        justify-content: space-around;
+      }
+      .justify-content-evenly {
+        justify-content: space-evenly;
+      }
+      .align-items-center {
+        align-items: center;
+      }
+    </style>
+    <script type="module" crossorigin src="/assets/index-0iVo5Bs5.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-DqFmyB09.css">
+  </head>
+  <body>
+    <div id="app"></div>
+  </body>
+</html>
