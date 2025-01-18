@@ -8,7 +8,6 @@ const categoryRouter = express.Router();
 // @access  Protected
 categoryRouter.post("/", authenticateToken, async (req, res) => {
   const { name, type } = req.body;
-  console.log(req.body);
 
   // Ensure the required fields are provided
   if (!name || !type) {
