@@ -1,5 +1,5 @@
 const express = require("express");
-const { Expense } = require("../db/model");
+const { Expense, Trip } = require("../db/model");
 const authenticateToken = require("../util/jwt");
 const { default: mongoose } = require("mongoose");
 const expenseRouter = express.Router();
@@ -8,7 +8,8 @@ const expenseRouter = express.Router();
 // @desc    Create a new expense entry for the authenticated user
 // @access  Protected
 expenseRouter.post("/", authenticateToken, async (req, res) => {
-  const { categoryId, amount, description, date, type, needOrWant } = req.body;
+  const { categoryId, amount, description, date, type, needOrWant, tripId } =
+    req.body;
 
   // Ensure required fields are provided
   if (!categoryId || !amount || !type || !needOrWant) {
@@ -30,6 +31,11 @@ expenseRouter.post("/", authenticateToken, async (req, res) => {
     });
 
     await expense.save();
+
+    if (tripId && expense)
+      await Trip.findByIdAndUpdate(tripId, {
+        $push: { expenses: expense._id },
+      });
     res.status(201).json({ success: true, expense });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
