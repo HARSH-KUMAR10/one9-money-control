@@ -1,7 +1,9 @@
 const express = require("express");
-const { Expense, Trip } = require("../db/model");
+const { Expense, Trip, User } = require("../db/model");
 const authenticateToken = require("../util/jwt");
 const { default: mongoose } = require("mongoose");
+const { sendMail } = require("../util/mailer");
+const { generateHTML } = require("../util/common");
 const expenseRouter = express.Router();
 
 // @route   POST /api/expenses
@@ -210,64 +212,78 @@ const calculateFrequencyKey = (date, frequency) => {
   }
 };
 
+const filterExpensesForPeriod = async (
+  userId,
+  startDate,
+  endDate,
+  frequency
+) => {
+  // Convert start and end dates to ISO format
+  const filter = {
+    userId: new mongoose.Types.ObjectId(userId),
+    date: { $gte: new Date(startDate), $lte: new Date(endDate) },
+  };
+
+  // Fetch expenses with category details
+  const expenses = await Expense.aggregate([
+    { $match: filter }, // Filter based on userId and date range
+    {
+      $lookup: {
+        from: "categories", // Category collection
+        localField: "categoryId",
+        foreignField: "_id",
+        as: "category",
+      },
+    },
+    { $unwind: "$category" }, // Flatten category array
+  ]);
+
+  // Initialize stats object
+  const stats = {
+    totalAmount: 0,
+    totalAmountByType: { fixed: 0, variable: 0 },
+    totalAmountByNeedOrWant: { need: 0, want: 0 },
+    totalAmountByFrequency: {}, // Dynamic based on frequency
+    totalAmountByCategory: {},
+  };
+
+  // Iterate through the filtered expenses
+  expenses.forEach((expense) => {
+    // Total amount
+    stats.totalAmount += expense.amount;
+
+    // Total amount by type
+    stats.totalAmountByType[expense.type] =
+      (stats.totalAmountByType[expense.type] || 0) + expense.amount;
+
+    // Total amount by need or want
+    stats.totalAmountByNeedOrWant[expense.needOrWant] =
+      (stats.totalAmountByNeedOrWant[expense.needOrWant] || 0) + expense.amount;
+
+    // Total amount by frequency
+    const frequencyKey = calculateFrequencyKey(expense.date, frequency);
+    stats.totalAmountByFrequency[frequencyKey] =
+      (stats.totalAmountByFrequency[frequencyKey] || 0) + expense.amount;
+
+    // Total amount by category
+    const categoryName = expense.category.name; // Replace "name" with your actual category field
+    stats.totalAmountByCategory[categoryName] =
+      (stats.totalAmountByCategory[categoryName] || 0) + expense.amount;
+  });
+  return stats;
+};
+
 expenseRouter.get("/stats/filter", authenticateToken, async (req, res) => {
   try {
     const userId = req.user.userId;
     const { startDate, endDate, frequency } = req.query;
 
-    // Convert start and end dates to ISO format
-    const filter = {
-      userId: new mongoose.Types.ObjectId(userId),
-      date: { $gte: new Date(startDate), $lte: new Date(endDate) },
-    };
-
-    // Fetch expenses with category details
-    const expenses = await Expense.aggregate([
-      { $match: filter }, // Filter based on userId and date range
-      {
-        $lookup: {
-          from: "categories", // Category collection
-          localField: "categoryId",
-          foreignField: "_id",
-          as: "category",
-        },
-      },
-      { $unwind: "$category" }, // Flatten category array
-    ]);
-
-    // Initialize stats object
-    const stats = {
-      totalAmount: 0,
-      totalAmountByType: { fixed: 0, variable: 0 },
-      totalAmountByNeedOrWant: { need: 0, want: 0 },
-      totalAmountByFrequency: {}, // Dynamic based on frequency
-      totalAmountByCategory: {},
-    };
-
-    // Iterate through the filtered expenses
-    expenses.forEach((expense) => {
-      // Total amount
-      stats.totalAmount += expense.amount;
-
-      // Total amount by type
-      stats.totalAmountByType[expense.type] =
-        (stats.totalAmountByType[expense.type] || 0) + expense.amount;
-
-      // Total amount by need or want
-      stats.totalAmountByNeedOrWant[expense.needOrWant] =
-        (stats.totalAmountByNeedOrWant[expense.needOrWant] || 0) +
-        expense.amount;
-
-      // Total amount by frequency
-      const frequencyKey = calculateFrequencyKey(expense.date, frequency);
-      stats.totalAmountByFrequency[frequencyKey] =
-        (stats.totalAmountByFrequency[frequencyKey] || 0) + expense.amount;
-
-      // Total amount by category
-      const categoryName = expense.category.name; // Replace "name" with your actual category field
-      stats.totalAmountByCategory[categoryName] =
-        (stats.totalAmountByCategory[categoryName] || 0) + expense.amount;
-    });
+    let stats = await filterExpensesForPeriod(
+      userId,
+      startDate,
+      endDate,
+      frequency
+    );
 
     // Return stats in the response
     res.json({
@@ -337,6 +353,46 @@ expenseRouter.get("/get/all", authenticateToken, async (req, res) => {
     res
       .status(500)
       .json({ error: "An error occurred while processing the data." });
+  }
+});
+
+expenseRouter.get("/stats/report", async (req, res) => {
+  try {
+    const { startDate, endDate, frequency } = req.query;
+    console.log(
+      `===================================================\nstart-date: ${startDate}\tend-date: ${endDate}\tfrequency: ${frequency}`
+    );
+    let allUsers = await User.find({}, "email");
+    allUsers.map(async (user) => {
+      let stats = await filterExpensesForPeriod(
+        user._id,
+        startDate,
+        endDate,
+        frequency
+      );
+      console.log(
+        `=====\tUser: ${JSON.stringify(user.email)} \tExpense: ${JSON.stringify(
+          stats.totalAmount
+        )}\t=====`
+      );
+      if (stats.totalAmount != 0) {
+        const mailOptions = {
+          from: process.env.SENDER_EMAIL,
+          to: user.email, // Replace with recipient's email
+          subject: `Expense Summary for ${startDate} to ${endDate}`,
+          html: generateHTML(stats),
+        };
+
+        await sendMail(mailOptions);
+      }
+    });
+    res.status(200).send({ success: true });
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).json({
+      error: "An error occurred while processing the data.",
+      success: false,
+    });
   }
 });
 
