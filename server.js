@@ -9,6 +9,7 @@ const reportRouter = require("./routers/report.router");
 const cors = require("cors");
 require("dotenv").config();
 const path = require("path");
+const requestLogger = require("./util/requestLogger");
 
 const app = express();
 
@@ -17,6 +18,7 @@ connectDB();
 // Middleware
 app.use(express.json());
 app.use(cors());
+app.use(requestLogger); // Apply logging middleware
 // Serve static files from the "dist" directory
 app.use("/", express.static(path.join(__dirname, "dist")));
 
