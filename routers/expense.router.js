@@ -396,4 +396,43 @@ expenseRouter.get("/stats/report", async (req, res) => {
   }
 });
 
+expenseRouter.get("/stats/report/personal", async (req, res) => {
+  try {
+    let sent = false;
+    const { startDate, endDate, frequency, email, userId } = req.query;
+    console.log(
+      `===================================================\nstart-date: ${startDate}\tend-date: ${endDate}\tfrequency: ${frequency}\temail: ${email}\tuserId: ${userId}`
+    );
+    let stats = await filterExpensesForPeriod(
+      userId,
+      startDate,
+      endDate,
+      frequency
+    );
+    console.log(
+      `=====\tUser: ${JSON.stringify(email)} \tExpense: ${JSON.stringify(
+        stats.totalAmount
+      )}\t=====`
+    );
+    if (stats.totalAmount != 0) {
+      sent = true;
+      const mailOptions = {
+        from: process.env.SENDER_EMAIL,
+        to: email, // Replace with recipient's email
+        subject: `Expense Summary for ${startDate} to ${endDate}`,
+        html: generateHTML(stats),
+      };
+
+      await sendMail(mailOptions);
+    }
+    res.status(200).send({ success: sent, email });
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).json({
+      error: "An error occurred while processing the data.",
+      success: false,
+    });
+  }
+});
+
 module.exports = expenseRouter;
