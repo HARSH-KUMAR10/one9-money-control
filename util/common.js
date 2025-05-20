@@ -88,12 +88,19 @@ const generateHTML = (stats) => {
       <div class="section">
         <h2>Amount by Category</h2>
         <table>
-          <tr><th>Category</th><th>Amount</th></tr>
+          <tr><th>Category</th><th>Amount</th><th>Threshold</th></tr>
           ${Object.entries(stats.totalAmountByCategory)
-            .sort((a, b) => b[1] - a[1])
+            .sort((a, b) => b[1].amount - a[1].amount)
             .map(
-              ([category, amount]) =>
-                `<tr><td>${category}</td><td>${amount}</td></tr>`
+              ([category, data]) =>
+                `<tr><td>${category}</td><td>${data.amount}</td>
+              <td style="${
+                data.amount / data.threshold > 0.8
+                  ? "color:red"
+                  : data.amount / data.threshold > 0.6
+                  ? "color:orange"
+                  : "color:green"
+              }">(${data.threshold})</td></tr>`
             )
             .join("")}
         </table>

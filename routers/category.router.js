@@ -7,7 +7,7 @@ const categoryRouter = express.Router();
 // @desc    Create a new category for a user
 // @access  Protected
 categoryRouter.post("/", authenticateToken, async (req, res) => {
-  const { name, type } = req.body;
+  const { name, type, threshold = 0 } = req.body;
 
   // Ensure the required fields are provided
   if (!name || !type) {
@@ -21,6 +21,7 @@ categoryRouter.post("/", authenticateToken, async (req, res) => {
       userId: req.user.userId, // Assign the category to the authenticated user
       name,
       type,
+      threshold,
     });
 
     await category.save();
@@ -68,12 +69,12 @@ categoryRouter.get("/:id", authenticateToken, async (req, res) => {
 // @desc    Update a category by ID for the authenticated user
 // @access  Protected
 categoryRouter.put("/:id", authenticateToken, async (req, res) => {
-  const { name, type } = req.body;
+  const { name, type, threshold = 0 } = req.body;
 
   try {
     const category = await Category.findOneAndUpdate(
       { _id: req.params.id, userId: req.user.userId }, // Ensure user ownership
-      { name, type },
+      { name, type, threshold },
       { new: true, runValidators: true }
     );
 

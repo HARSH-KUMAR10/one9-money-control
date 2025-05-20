@@ -27,6 +27,7 @@ const CategorySchema = new mongoose.Schema(
     },
     name: { type: String, required: true },
     type: { type: String, enum: ["income", "expense"], required: true }, // Specifies if it's for income or expense
+    threshold: { type: Number, default: null }, // Optional threshold for expenses
   },
   { timestamps: true }
 );

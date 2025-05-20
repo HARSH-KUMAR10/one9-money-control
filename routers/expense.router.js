@@ -267,8 +267,22 @@ const filterExpensesForPeriod = async (
 
     // Total amount by category
     const categoryName = expense.category.name; // Replace "name" with your actual category field
-    stats.totalAmountByCategory[categoryName] =
-      (stats.totalAmountByCategory[categoryName] || 0) + expense.amount;
+    if (!stats.totalAmountByCategory[categoryName]) {
+      stats.totalAmountByCategory[categoryName] = {
+        amount: 0,
+        threshold: 0,
+      };
+    }
+    if (
+      stats.totalAmountByCategory[categoryName]["threshold"] == 0 &&
+      expense.category.threshold > 0
+    ) {
+      stats.totalAmountByCategory[categoryName]["threshold"] =
+        expense.category.threshold;
+    }
+    stats.totalAmountByCategory[categoryName]["amount"] =
+      (stats.totalAmountByCategory[categoryName]["amount"] || 0) +
+      expense.amount;
   });
   return stats;
 };
