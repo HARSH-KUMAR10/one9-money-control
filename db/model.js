@@ -120,4 +120,36 @@ const ReportSchema = new mongoose.Schema(
 
 const Report = mongoose.model("Report", ReportSchema);
 
-module.exports = { User, Category, Income, Expense, Trip, Report };
+const ImportConfigurationSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    name: { type: String, required: true }, // user-friendly name for config
+    table: { type: String, required: true }, // e.g. "TableA"
+    mappings: [
+      {
+        columnIndex: { type: Number, required: true }, // 0,1,2... from PDF table
+        field: { type: String, required: true }, // e.g. "fieldA"
+      },
+    ],
+  },
+  { timestamps: true }
+);
+
+const ImportConfiguration = mongoose.model(
+  "ImportConfiguration",
+  ImportConfigurationSchema
+);
+
+module.exports = {
+  User,
+  Category,
+  Income,
+  Expense,
+  Trip,
+  Report,
+  ImportConfiguration,
+};

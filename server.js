@@ -10,6 +10,7 @@ const cors = require("cors");
 require("dotenv").config();
 const path = require("path");
 const requestLogger = require("./util/requestLogger");
+const importConfigRouter = require("./routers/importConfig.router");
 
 const app = express();
 
@@ -29,6 +30,7 @@ app.use("/api/income", incomeRouter);
 app.use("/api/expense", expenseRouter);
 app.use("/api/trip", tripRouter);
 app.use("/api/report", reportRouter);
+app.use("/api/import-config", importConfigRouter);
 
 // Fallback for all other routes to serve the index.html
 app.get("*", (req, res) => {

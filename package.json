@@ -16,6 +16,9 @@
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.5.2",
-    "node-mailer": "^0.1.1"
+    "multer": "^2.0.2",
+    "node-mailer": "^0.1.1",
+    "pdf2table": "^0.0.2",
+    "xlsx": "^0.18.5"
   }
 }

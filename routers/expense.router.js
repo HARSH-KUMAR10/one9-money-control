@@ -449,4 +449,80 @@ expenseRouter.get("/stats/report/personal", async (req, res) => {
   }
 });
 
+// Bulk insert for import module
+expenseRouter.post("/bulk", authenticateToken, async (req, res) => {
+  const expensesData = req.body.expenses; // Expecting an array of expense objects
+
+  if (!Array.isArray(expensesData) || expensesData.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: "Request body must be a non-empty array of expenses.",
+    });
+  }
+
+  // Validate each expense object before proceeding
+  for (const exp of expensesData) {
+    if (!exp.categoryId || !exp.amount || !exp.type || !exp.needOrWant) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Each expense must contain categoryId, amount, type, and needOrWant.",
+      });
+    }
+  }
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    // Attach userId to each expense
+    const expensesToInsert = expensesData.map((exp) => ({
+      userId: req.user.userId,
+      categoryId: exp.categoryId,
+      amount: parseFloat(exp.amount.replace(/,/g, "")) * -1,
+      description: exp.description,
+      date: exp.date,
+      type: exp.type,
+      needOrWant: exp.needOrWant,
+    }));
+
+    // Insert all expenses in one go
+    const insertedExpenses = await Expense.insertMany(expensesToInsert, {
+      session,
+    });
+
+    // Update trips if tripId exists in any expense
+    const tripUpdates = expensesData
+      .filter((exp) => exp.tripId)
+      .map((exp, i) => ({
+        tripId: exp.tripId,
+        expenseId: insertedExpenses[i]._id,
+      }));
+
+    // Group trip updates by tripId for optimization
+    const groupedUpdates = tripUpdates.reduce((acc, curr) => {
+      if (!acc[curr.tripId]) acc[curr.tripId] = [];
+      acc[curr.tripId].push(curr.expenseId);
+      return acc;
+    }, {});
+
+    for (const [tripId, expenseIds] of Object.entries(groupedUpdates)) {
+      await Trip.findByIdAndUpdate(
+        tripId,
+        { $push: { expenses: { $each: expenseIds } } },
+        { session }
+      );
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    res.status(201).json({ success: true, expenses: insertedExpenses });
+  } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 module.exports = expenseRouter;
