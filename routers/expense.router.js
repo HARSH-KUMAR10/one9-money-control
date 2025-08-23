@@ -479,7 +479,7 @@ expenseRouter.post("/bulk", authenticateToken, async (req, res) => {
     const expensesToInsert = expensesData.map((exp) => ({
       userId: req.user.userId,
       categoryId: exp.categoryId,
-      amount: parseFloat(exp.amount.replace(/,/g, "")) * -1,
+      amount: Math.ceil(parseFloat(exp.amount.replace(/,/g, "")) * -1),
       description: exp.description,
       date: exp.date,
       type: exp.type,
