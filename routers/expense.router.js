@@ -486,18 +486,20 @@ expenseRouter.post("/bulk", authenticateToken, async (req, res) => {
       needOrWant: exp.needOrWant,
     }));
 
-    // Insert all expenses in one go
     const insertedExpenses = await Expense.insertMany(expensesToInsert, {
       session,
     });
 
-    // Update trips if tripId exists in any expense
-    const tripUpdates = expensesData
-      .filter((exp) => exp.tripId)
-      .map((exp, i) => ({
+    const tripUpdates = [];
+
+    expensesData.forEach((exp, index) => {
+      if (!exp.tripId) return;
+
+      tripUpdates.push({
         tripId: exp.tripId,
-        expenseId: insertedExpenses[i]._id,
-      }));
+        expenseId: insertedExpenses[index]._id,
+      });
+    });
 
     // Group trip updates by tripId for optimization
     const groupedUpdates = tripUpdates.reduce((acc, curr) => {
